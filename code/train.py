@@ -31,18 +31,19 @@ def main(_):
     # Import data
     if FLAGS.dataset == "mnist":
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+        print("FORMAT: " + str(type(mnist)))
     elif FLAGS.dataset == "fashion-mnist":
         print("Reading fashion mnist")
         mnist = input_data.read_data_sets('data/fashion',
                                   source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/', one_hot=True)
-
-        # mnist=input_data.read_data_sets('data/fashion', one_hot=True)
-    # elif FLAGS.dataset == "cifar-10":
+    elif FLAGS.dataset == "cifar-10":
+        train, test = tf.keras.datasets.cifar10.load_data()
+        mnist = tf.data.Dataset.from_tensor_slices((train[0], train[1]))
 
     tf.reset_default_graph()
 
     # Create the model
-    caps_net = CapsNet(mnist)
+    caps_net = CapsNet(mnist, FLAGS.dataset)
     caps_net.creat_architecture()
 
     config = tf.ConfigProto()

@@ -17,6 +17,7 @@ from config import cfg
 #Added by Jaesik Yoon
 from get_data import image_save
 
+
 def squash(cap_input):
     """
     squash function for keep the length of capsules between 0 - 1
@@ -39,12 +40,18 @@ def squash(cap_input):
 
 
 class CapsNet(object):
-    def __init__(self, mnist):
+    def __init__(self, mnist, dataset):
         """initial class with mnist dataset"""
         self._mnist = mnist
+        print("OBJECT TYPE: " + str(type(self._mnist)))
+        # print("OBJECT DIMENSIONS" + str(self._mnist.shape))
+        self._dataset = dataset
 
         # keep tracking of the dimension of feature maps
-        self._dim = 28
+        if self._dataset == "mnist" or self._dataset == "fashion-mnist":
+            self._dim = 28
+        elif self._dataset == "cifar-10" or self._dataset == "cifar-100":
+            self._dim = 32
         # store number of capsules of each capsule layer
         # the conv1-layer has 0 capsules
         self._num_caps = [0]
@@ -357,9 +364,11 @@ class CapsNet(object):
                 conv1 = tf.nn.relu(conv1)
 
             # update dimensions of feature map
+            print("BEFORE: " + str(self._dim))
             self._dim = (self._dim - 9) // 1 + 1
-            assert self._dim == 20, "after conv1, dimensions of feature map" \
-                                    "should be 20x20"
+            print("AFTER: " + str(self._dim))
+            # assert self._dim == 20, "after conv1, dimensions of feature map" \
+            #                         "should be 20x20"
 
             # conv1 with shape [None, 20, 20, 256]
 
@@ -370,7 +379,7 @@ class CapsNet(object):
             self._dim = (self._dim - 9) // 2 + 1
             # number of primary caps: 6x6x32 = 1152
             self._num_caps.append(self._dim ** 2 * cfg.PRIMARY_CAPS_CHANNELS)
-            assert self._dim == 6, "dims for primary caps grid should be 6x6."
+            # assert self._dim == 6, "dims for primary caps grid should be 6x6."
 
             # build up PriamryCaps with 32 channels and 8-D vector
             # 1. dummy solution
@@ -413,6 +422,11 @@ class CapsNet(object):
             tf.summary.scalar('accuracy', self.accuracy)
 
     def train_with_summary(self, sess, batch_size=100, iters=0):
+        if self._dataset == "mnist" or self._dataset == "fashion-mnist":
+            batch_size = 100
+        elif self._dataset == "cifar-10" or self._dataset == "cifar-100":
+            batch_size = 1000
+
         batch = self._mnist.train.next_batch(batch_size)
         loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
                                                       self.accuracy, self._summary_op],
