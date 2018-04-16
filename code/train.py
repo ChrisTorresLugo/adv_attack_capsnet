@@ -33,9 +33,10 @@ def main(_):
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
     elif FLAGS.dataset == "fashion-mnist":
         print("Reading fashion mnist")
-        mnist = input_data.read_data_sets('data/fashion',
-                                  source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/')
+        # mnist = input_data.read_data_sets('data/fashion',
+                                  # source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/')
 
+        mnist=input_data.read_data_sets('data/fashion', one_hot=True)
     tf.reset_default_graph()
 
     # Create the model
