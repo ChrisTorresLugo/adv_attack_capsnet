@@ -482,7 +482,7 @@ class CapsNet(object):
             
             # When writing imgs
             image_save(x_i,fname);
-            return;
+            # return;
             
             ac = sess.run(self.accuracy,
                           feed_dict={self._x: x_i,

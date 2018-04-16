@@ -61,8 +61,8 @@ def main(_):
 
         caps_net.train_writer.add_graph(sess.graph)
    
-        #caps_net.adv_validation(sess, 'train',x_adv,FLAGS.max_iter)
-        #caps_net.adv_validation(sess, 'validation',x_adv,FLAGS.max_iter)
+        # caps_net.adv_validation(sess, 'train',x_adv,FLAGS.max_iter)
+        # caps_net.adv_validation(sess, 'validation',x_adv,FLAGS.max_iter)
         caps_net.adv_validation(sess, 'test',x_adv,FLAGS.max_iter,"samples/gsm_"+str(FLAGS.max_iter)+"_"+str(FLAGS.max_epsilon)+".PNG")
 
 

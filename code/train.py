@@ -29,7 +29,12 @@ def model_test():
 
 def main(_):
     # Import data
-    mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+    if FLAGS.dataset == "mnist":
+        mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+    elif FLAGS.dataset == "fashion-mnist":
+        print("Reading fashion mnist")
+        mnist = input_data.read_data_sets('data/fashion',
+                                  source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/')
 
     tf.reset_default_graph()
 
@@ -76,7 +81,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default=cfg.DATA_DIR,
                         help='Directory for storing input data')
+    parser.add_argument('--dataset', type = str, default = "mnist",
+                        help='Dataset used to train the model')
     FLAGS, unparsed = parser.parse_known_args()
+    print(FLAGS.dataset)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
     # for model building test
