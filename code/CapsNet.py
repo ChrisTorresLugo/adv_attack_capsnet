@@ -17,6 +17,106 @@ from config import cfg
 #Added by Jaesik Yoon
 from get_data import image_save
 
+import pickle
+import numpy as np
+import os
+from urllib.request import urlretrieve
+import tarfile
+import zipfile
+import sys
+
+# Source: https://github.com/exelban/tensorflow-cifar-10/blob/master/include/data.py
+def get_data_set(name="train", cifar=10):
+    x = None
+    y = None
+    l = None
+
+    maybe_download_and_extract()
+
+    folder_name = "cifar_10" if cifar == 10 else "cifar_100"
+
+    f = open('./data_set/'+folder_name+'/batches.meta', 'rb')
+    datadict = pickle.load(f, encoding='latin1')
+    f.close()
+    l = datadict['label_names']
+
+    if name is "train":
+        for i in range(5):
+            f = open('./data_set/'+folder_name+'/data_batch_' + str(i + 1), 'rb')
+            datadict = pickle.load(f, encoding='latin1')
+            f.close()
+
+            _X = datadict["data"]
+            _Y = datadict['labels']
+
+            _X = np.array(_X, dtype=float) / 255.0
+            _X = _X.reshape([-1, 3, 32, 32])
+            _X = _X.transpose([0, 2, 3, 1])
+            _X = _X.reshape(-1, 32*32*3)
+
+            if x is None:
+                x = _X
+                y = _Y
+            else:
+                x = np.concatenate((x, _X), axis=0)
+                y = np.concatenate((y, _Y), axis=0)
+
+    elif name is "test":
+        f = open('./data_set/'+folder_name+'/test_batch', 'rb')
+        datadict = pickle.load(f, encoding='latin1')
+        f.close()
+
+        x = datadict["data"]
+        y = np.array(datadict['labels'])
+
+        x = np.array(x, dtype=float) / 255.0
+        x = x.reshape([-1, 3, 32, 32])
+        x = x.transpose([0, 2, 3, 1])
+        x = x.reshape(-1, 32*32*3)
+
+    def dense_to_one_hot(labels_dense, num_classes=10):
+        num_labels = labels_dense.shape[0]
+        index_offset = np.arange(num_labels) * num_classes
+        labels_one_hot = np.zeros((num_labels, num_classes))
+        labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
+
+        return labels_one_hot
+
+    return x, dense_to_one_hot(y), l
+
+
+def _print_download_progress(count, block_size, total_size):
+    pct_complete = float(count * block_size) / total_size
+    msg = "\r- Download progress: {0:.1%}".format(pct_complete)
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+
+
+def maybe_download_and_extract():
+    main_directory = "./data_set/"
+    cifar_10_directory = main_directory+"cifar_10/"
+    if not os.path.exists(main_directory):
+        os.makedirs(main_directory)
+
+        url = "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+        filename = url.split('/')[-1]
+        file_path = os.path.join(main_directory, filename)
+        zip_cifar_10 = file_path
+        file_path, _ = urlretrieve(url=url, filename=file_path, reporthook=_print_download_progress)
+
+        print()
+        print("Download finished. Extracting files.")
+        if file_path.endswith(".zip"):
+            zipfile.ZipFile(file=file_path, mode="r").extractall(main_directory)
+        elif file_path.endswith((".tar.gz", ".tgz")):
+            tarfile.open(name=file_path, mode="r:gz").extractall(main_directory)
+        print("Done.")
+
+        os.rename(main_directory+"./cifar-10-batches-py", cifar_10_directory)
+        os.remove(zip_cifar_10)
+
+train_x, train_y, train_l = get_data_set()
+test_x, test_y, test_l = get_data_set("test")
 
 def squash(cap_input):
     """
@@ -40,17 +140,15 @@ def squash(cap_input):
 
 
 class CapsNet(object):
-    def __init__(self, mnist, dataset):
+    def __init__(self, mnist, dataset_name):
         """initial class with mnist dataset"""
         self._mnist = mnist
-        print("OBJECT TYPE: " + str(type(self._mnist)))
-        # print("OBJECT DIMENSIONS" + str(self._mnist.shape))
-        self._dataset = dataset
+        self._dataset_name = dataset_name
 
         # keep tracking of the dimension of feature maps
-        if self._dataset == "mnist" or self._dataset == "fashion-mnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist":
             self._dim = 28
-        elif self._dataset == "cifar-10" or self._dataset == "cifar-100":
+        elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
             self._dim = 32
         # store number of capsules of each capsule layer
         # the conv1-layer has 0 capsules
@@ -241,9 +339,14 @@ class CapsNet(object):
                                       weights_initializer=self._w_initializer)
             fc = slim.fully_connected(fc, 1024,
                                       weights_initializer=self._w_initializer)
-            fc = slim.fully_connected(fc, 784,
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist":
+                fc = slim.fully_connected(fc, 784,
                                       weights_initializer=self._w_initializer,
                                       activation_fn=None)
+            elif self._dataset_name == "cifar-10":
+                fc = slim.fully_connected(fc, 3072,
+                                          weights_initializer=self._w_initializer,
+                                          activation_fn=None)
             # the last layer with sigmoid activation
             out = tf.sigmoid(fc)
             # out with shape [None, 784]
@@ -303,8 +406,12 @@ class CapsNet(object):
     def creat_architecture(self):
         """creat architecture of the whole network"""
         # set up placeholder of input data and labels
-        self._x = tf.placeholder(tf.float32, [None, 784])
-        self._y_ = tf.placeholder(tf.float32, [None, 10])
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist":
+            self._x = tf.placeholder(tf.float32, [None, 784])
+            self._y_ = tf.placeholder(tf.float32, [None, 10])
+        elif self._dataset_name == "cifar-10":
+            self._x = tf.placeholder(tf.float32, shape=[None, 3072])
+            self._y_ = tf.placeholder(tf.float32, shape=[None, 10])
 
         # set up initializer for weights and bias
         self._w_initializer = tf.truncated_normal_initializer(stddev=0.1)
@@ -342,8 +449,13 @@ class CapsNet(object):
         """build the graph of the network"""
 
         # reshape for conv ops
-        with tf.name_scope('x_reshape'):
-            x_image = tf.reshape(self._x, [-1, 28, 28, 1])
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist":
+            with tf.name_scope('x_reshape'):
+                x_image = tf.reshape(self._x, [-1, 28, 28, 1])
+        elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
+            with tf.name_scope("x_reshape"):
+                x_image = tf.reshape(self._x, [-1, 32, 32, 1])
+
 
         # initial conv1 op
         # 1). conv1 with kernel 9x9, stride 1, output channels 256
@@ -422,16 +534,31 @@ class CapsNet(object):
             tf.summary.scalar('accuracy', self.accuracy)
 
     def train_with_summary(self, sess, batch_size=100, iters=0):
-        if self._dataset == "mnist" or self._dataset == "fashion-mnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist":
             batch_size = 100
-        elif self._dataset == "cifar-10" or self._dataset == "cifar-100":
-            batch_size = 1000
+            batch = self._mnist.train.next_batch(batch_size)
 
-        batch = self._mnist.train.next_batch(batch_size)
-        loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-                                                      self.accuracy, self._summary_op],
-                                                     feed_dict={self._x: batch[0],
-                                                                self._y_: batch[1]})
+
+            loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
+                                                        self.accuracy, self._summary_op],
+                                                        feed_dict={self._x: batch[0],
+                                                        self._y_: batch[1]})
+
+        elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
+            batch_size = 1000
+            # self._mnist.batch(batch_size)
+            # iterator = self._mnist.make_initializable_iterator()
+            randidx = np.random.randint(len(train_x), size=batch_size)
+            batch_xs = train_x[randidx]
+            batch_ys = train_y[randidx]
+
+
+            loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
+                                                        self.accuracy, self._summary_op],
+                                                        feed_dict={self._x: batch_xs,
+                                                        self._y_: batch_ys})
+
+
         if iters % cfg.PRINT_EVERY == 0 and iters > 0:
             val_batch = self._mnist.validation.next_batch(batch_size)
 
@@ -504,3 +631,4 @@ class CapsNet(object):
             acc.append(ac)
         all_ac = np.mean(np.array(acc))
         print("whole {} accuracy: {}".format(set, all_ac))
+

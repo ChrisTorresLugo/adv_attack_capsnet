@@ -17,6 +17,7 @@ from six.moves import xrange
 from tensorflow.examples.tutorials.mnist import input_data
 
 from CapsNet import CapsNet
+import TFDB
 
 FLAGS = None
 
@@ -32,14 +33,21 @@ def main(_):
     if FLAGS.dataset == "mnist":
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
         print("FORMAT: " + str(type(mnist)))
+        return
     elif FLAGS.dataset == "fashion-mnist":
         print("Reading fashion mnist")
         mnist = input_data.read_data_sets('data/fashion',
                                   source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/', one_hot=True)
+        print("Fashion-MNIST type: " + str(type(mnist)))
     elif FLAGS.dataset == "cifar-10":
-        train, test = tf.keras.datasets.cifar10.load_data()
-        mnist = tf.data.Dataset.from_tensor_slices((train[0], train[1]))
+        # train, test = tf.keras.datasets.cifar10.load_data()
+        # mnist = tf.data.Dataset.from_tensor_slices((train[0], train[1]))
+        mnist = TFDB.dataset.image.cifar10('tmp/cifar10')
+        # dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
+        # print(features[0])
+        # return
 
+        # mnist = input_data.read_data_sets('http://www.cs.utoronto.ca/~kriz/cifar-10-python.tar.gz', one_hot=True)
     tf.reset_default_graph()
 
     # Create the model
