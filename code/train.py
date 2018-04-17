@@ -42,7 +42,8 @@ def main(_):
     elif FLAGS.dataset == "cifar-10":
         # train, test = tf.keras.datasets.cifar10.load_data()
         # mnist = tf.data.Dataset.from_tensor_slices((train[0], train[1]))
-        mnist = TFDB.dataset.image.cifar10('tmp/cifar10')
+        # mnist = TFDB.dataset.image.cifar10('tmp/cifar10')
+        mnist = ""
         # dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
         # print(features[0])
         # return
