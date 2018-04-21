@@ -424,14 +424,10 @@ def main(_):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, default=cfg.DATA_DIR,
-                        help='Directory for storing input data')
-    parser.add_argument('--max_epsilon', type=int, default=10,
-                        help='max_epsilon')
-    parser.add_argument('--max_iter', type=int, default=1,
-                        help='max iteration')
-    parser.add_argument('--dataset', type = str, default = "mnist",
-                        help='Dataset used to train the model')
+    parser.add_argument('--data_dir', type=str, default=cfg.DATA_DIR, help='Directory for storing input data')
+    parser.add_argument('--max_epsilon', type=int, default=10, help='max_epsilon')
+    parser.add_argument('--max_iter', type=int, default=1, help='max iteration')
+    parser.add_argument('--dataset', type = str, default = "mnist", help='Dataset used to train the model')
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
