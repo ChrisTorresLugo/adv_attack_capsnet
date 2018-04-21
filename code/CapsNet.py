@@ -48,7 +48,10 @@ class CapsNet(object):
         self._dataset_name = dataset_name
 
         # keep tracking of the dimension of feature maps
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                or self._dataset_name == "emnist-byclass":
             self._dim = 28
 
         # store number of capsules of each capsule layer
@@ -96,28 +99,85 @@ class CapsNet(object):
         :return
             digit_caps: the output of digit capsule layer output, with shape: [None, 10, 16]
         """
+        print("DYNAMIC ROUTING V1")
         # number of the capsules in current layer
         num_caps = self._num_caps[layer_index]
         # weight matrix for capsules in "layer_index" layer
         # W_ij
-        cap_ws = tf.get_variable('cap_w', shape=[10, num_caps, 8, 16], dtype=tf.float32,)
-        # initial value for "tf.scan", see official doc for details
-        fn_init = tf.zeros([10, num_caps, 1, 16])
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
+                or self._dataset_name == "emnist-digits":
+            cap_ws = tf.get_variable('cap_w', shape=[10, num_caps, 8, 16], dtype=tf.float32,)
+            # initial value for "tf.scan", see official doc for details
+            fn_init = tf.zeros([10, num_caps, 1, 16])
+            # x after tiled with shape: [10, num_caps, 1, 8]
+            # cap_ws with shape: [10, num_caps, 8, 16],
+            # [8 x 16] for each pair of capsules between two layers
+            # u_hat_j|i = W_ij * u_i
+            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 10, 1, 1, 1]),
+                                   initializer=fn_init, name='cap_predicts')
+            # cap_predicts with shape: [None, 10, num_caps, 1, 16]
+            cap_predictions = tf.squeeze(cap_predicts, axis=[3])
+            # after squeeze with shape: [None, 10, num_caps, 16]
 
-        # x after tiled with shape: [10, num_caps, 1, 8]
-        # cap_ws with shape: [10, num_caps, 8, 16],
-        # [8 x 16] for each pair of capsules between two layers
-        # u_hat_j|i = W_ij * u_i
-        cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 10, 1, 1, 1]),
-                               initializer=fn_init, name='cap_predicts')
-        # cap_predicts with shape: [None, 10, num_caps, 1, 16]
-        cap_predictions = tf.squeeze(cap_predicts, axis=[3])
-        # after squeeze with shape: [None, 10, num_caps, 16]
+            # log prior probabilities
+            log_prior = tf.get_variable('log_prior', shape=[10, num_caps], dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
+            # log_prior with shape: [10, num_caps]
+        elif self._dataset_name == "emnist-balanced" or self._dataset_name == "emnist-bymerge":
+            cap_ws = tf.get_variable('cap_w', shape=[47, num_caps, 8, 16], dtype=tf.float32,)
+            # initial value for "tf.scan", see official doc for details
+            fn_init = tf.zeros([47, num_caps, 1, 16])
+            # x after tiled with shape: [10, num_caps, 1, 8]
+            # cap_ws with shape: [10, num_caps, 8, 16],
+            # [8 x 16] for each pair of capsules between two layers
+            # u_hat_j|i = W_ij * u_i
+            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 47, 1, 1, 1]),
+                                   initializer=fn_init, name='cap_predicts')
+            # cap_predicts with shape: [None, 10, num_caps, 1, 16]
+            cap_predictions = tf.squeeze(cap_predicts, axis=[3])
+            # after squeeze with shape: [None, 10, num_caps, 16]
 
-        # log prior probabilities
-        log_prior = tf.get_variable('log_prior', shape=[10, num_caps], dtype=tf.float32,
-                                    initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
-        # log_prior with shape: [10, num_caps]
+            # log prior probabilities
+            log_prior = tf.get_variable('log_prior', shape=[47, num_caps], dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
+            # log_prior with shape: [10, num_caps]
+        elif self._dataset_name == "emnist-letters":
+            cap_ws = tf.get_variable('cap_w', shape=[37, num_caps, 8, 16], dtype=tf.float32,)
+            # initial value for "tf.scan", see official doc for details
+            fn_init = tf.zeros([37, num_caps, 1, 16])
+            # x after tiled with shape: [10, num_caps, 1, 8]
+            # cap_ws with shape: [10, num_caps, 8, 16],
+            # [8 x 16] for each pair of capsules between two layers
+            # u_hat_j|i = W_ij * u_i
+            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 37, 1, 1, 1]),
+                                   initializer=fn_init, name='cap_predicts')
+            # cap_predicts with shape: [None, 10, num_caps, 1, 16]
+            cap_predictions = tf.squeeze(cap_predicts, axis=[3])
+            # after squeeze with shape: [None, 10, num_caps, 16]
+
+            # log prior probabilities
+            log_prior = tf.get_variable('log_prior', shape=[37, num_caps], dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
+            # log_prior with shape: [10, num_caps]
+        elif self._dataset_name == "emnist-byclass":
+            cap_ws = tf.get_variable('cap_w', shape=[62, num_caps, 8, 16], dtype=tf.float32,)
+            # initial value for "tf.scan", see official doc for details
+            fn_init = tf.zeros([62, num_caps, 1, 16])
+            # x after tiled with shape: [10, num_caps, 1, 8]
+            # cap_ws with shape: [10, num_caps, 8, 16],
+            # [8 x 16] for each pair of capsules between two layers
+            # u_hat_j|i = W_ij * u_i
+            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 62, 1, 1, 1]),
+                                   initializer=fn_init, name='cap_predicts')
+            # cap_predicts with shape: [None, 10, num_caps, 1, 16]
+            cap_predictions = tf.squeeze(cap_predicts, axis=[3])
+            # after squeeze with shape: [None, 10, num_caps, 16]
+
+            # log prior probabilities
+            log_prior = tf.get_variable('log_prior', shape=[62, num_caps], dtype=tf.float32,
+                                        initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
+            # log_prior with shape: [10, num_caps]
+
         # V1. static way
         if cfg.ROUTING_WAY == 'static':
             digit_caps = self._dynamic_routingV1(log_prior, cap_predictions)
@@ -156,10 +216,27 @@ class CapsNet(object):
             return [i - 1, prior, cap_out]
 
         condition = lambda i, proir, cap_out: i > 0
-        _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
-                                                               shape_invariants=[iters.get_shape(),
-                                                               tf.TensorShape([None, 10, num_caps]),
-                                                               init_cap.get_shape()])
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
+                or self._dataset_name == "emnist-digits":
+            _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
+                                                 shape_invariants=[iters.get_shape(),
+                                                                   tf.TensorShape([None, 10, num_caps]),
+                                                                   init_cap.get_shape()])
+        elif self._dataset_name == "emnist-balanced" or self._dataset_name == "emnist-bymerge":
+            _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
+                                                 shape_invariants=[iters.get_shape(),
+                                                                   tf.TensorShape([None, 47, num_caps]),
+                                                                   init_cap.get_shape()])
+        elif self._dataset_name == "emnist-letters":
+            _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
+                                                 shape_invariants=[iters.get_shape(),
+                                                                   tf.TensorShape([None, 37, num_caps]),
+                                                                   init_cap.get_shape()])
+        elif self._dataset_name == "emnist-byclass":
+            _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
+                                                 shape_invariants=[iters.get_shape(),
+                                                                   tf.TensorShape([None, 62, num_caps]),
+                                                                   init_cap.get_shape()])
         return digit_caps
 
     def _dynamic_routingV1(self, prior, cap_predictions):
@@ -214,7 +291,10 @@ class CapsNet(object):
         # 1. only use the target capsule with dimension [None, 16] or [16,] (use it for default)
         # 2. use all the capsule, including the masked out ones with lots of zeros
         with tf.name_scope('reconstruct'):
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                    or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                    or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                    or self._dataset_name == "emnist-byclass":
                 y_ = tf.expand_dims(self._y_, axis=2)
             # y_ shape: [None, 10, 1]
 
@@ -229,7 +309,10 @@ class CapsNet(object):
 
             fc = slim.fully_connected(target_cap, 512, weights_initializer=self._w_initializer)
             fc = slim.fully_connected(fc, 1024, weights_initializer=self._w_initializer)
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                    or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                    or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                    or self._dataset_name == "emnist-byclass":
                 fc = slim.fully_connected(fc, 784, weights_initializer=self._w_initializer, activation_fn=None)
             out = tf.sigmoid(fc)
             # out with shape [None, 784]
@@ -253,7 +336,10 @@ class CapsNet(object):
             # loss of positive classes
             # max(0, m+ - ||v_c||) ^ 2
             with tf.name_scope('pos_loss'):
-                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                        or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                        or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                        or self._dataset_name == "emnist-byclass":
                     pos_loss = tf.maximum(0., cfg.M_POS - tf.reduce_sum(self._digit_caps_norm * self._y_,
                                                                     axis=1), name='pos_max')
                 pos_loss = tf.square(pos_loss, name='pos_square')
@@ -262,7 +348,10 @@ class CapsNet(object):
             # pos_loss shape: [None, ]
 
             # get index of negative classes
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                    or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                    or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                    or self._dataset_name == "emnist-byclass":
                 y_negs = 1. - self._y_
 
             # max(0, ||v_c|| - m-) ^ 2
@@ -277,7 +366,10 @@ class CapsNet(object):
 
             # loss of reconstruction
             with tf.name_scope('l2_loss'):
-                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                        or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                        or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge"\
+                        or self._dataset_name == "emnist-byclass":
                     reconstruct_loss = tf.reduce_sum(tf.square(self._x - reconstruct), axis=-1)
                     reconstruct_loss = tf.reduce_mean(reconstruct_loss)
 
@@ -295,10 +387,19 @@ class CapsNet(object):
     def creat_architecture(self):
         """creat architecture of the whole network"""
         # set up placeholder of input data and labels
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                or self._dataset_name == "emnist-digits":
             self._x = tf.placeholder(tf.float32, [None, 784], name="mnist-image")
             self._y_ = tf.placeholder(tf.float32, [None, 10], name="mnist-label")
-
+        elif self._dataset_name == "emnist-balanced" or self._dataset_name == "emnist-bymerge":
+            self._x = tf.placeholder(tf.float32, [None, 784], name="balanced-image")
+            self._y_ = tf.placeholder(tf.float32, [None, 47], name="balanced-label")
+        elif self._dataset_name == "emnist-letters":
+            self._x = tf.placeholder(tf.float32, [None, 784], name="letters-image")
+            self._y_ = tf.placeholder(tf.float32, [None, 37], name="letters-label")
+        elif self._dataset_name == "emnist-byclass":
+            self._x = tf.placeholder(tf.float32, [None, 784], name="letters-image")
+            self._y_ = tf.placeholder(tf.float32, [None, 62], name="letters-label")
 
         # set up initializer for weights and bias
         self._w_initializer = tf.truncated_normal_initializer(stddev=0.1)
@@ -336,7 +437,10 @@ class CapsNet(object):
         """build the graph of the network"""
 
         # reshape for conv ops
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" or self._dataset_name == "emnist-digits":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                or self._dataset_name == "emnist-letters"  or self._dataset_name == "emnist-bymerge" \
+                or self._dataset_name == "emnist-byclass":
             with tf.name_scope('x_reshape'):
                 x_image = tf.reshape(self._x, [-1, 28, 28, 1])
 
@@ -420,7 +524,10 @@ class CapsNet(object):
 
 
     def train_with_summary(self, sess, batch_size=100, iters=0):
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                or self._dataset_name == "emnist-letters"  or self._dataset_name == "emnist-bymerge" \
+                or self._dataset_name == "emnist-byclass":
             batch = self._mnist.train.next_batch(batch_size)
 
             loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
@@ -429,7 +536,10 @@ class CapsNet(object):
                                                         self._y_: batch[1]})
 
         if iters % cfg.PRINT_EVERY == 0 and iters > 0:
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
+                    or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
+                    or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
+                    or self._dataset_name == "emnist-byclass":
                 val_batch = self._mnist.validation.next_batch(batch_size)
 
                 self.train_writer.add_summary(train_summary, iters)
@@ -439,8 +549,8 @@ class CapsNet(object):
                 print('train accuracy: %.4f' % train_acc)
 
                 test_acc, test_summary = sess.run([self.accuracy, self._summary_op],
-                                                  feed_dict={self._x: test_imgs,
-                                                             self._y_: test_labels})
+                                                  feed_dict={self._x: val_batch[0],
+                                                             self._y_: val_batch[1]})
                 print('val   accuracy: %.4f' % test_acc)
                 self.val_writer.add_summary(test_summary, iters)
                 self.val_writer.flush()

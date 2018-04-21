@@ -37,7 +37,6 @@ from tensorflow.python.platform import gfile
 
 
 DEFAULT_SOURCE_URL = "data/emnist/"
-# dataset = "emnist-mnist"
 
 def _read32(bytestream):
     dt = numpy.dtype(numpy.uint32).newbyteorder('>')
@@ -89,6 +88,16 @@ def extract_labels(f, one_hot=False, num_classes=10):
       ValueError: If the bystream doesn't start with 2049.
     """
     print('Extracting', f.name)
+    if FLAGS.dataset == "mnist" or FLAGS.dataset == "fashion-mnist" \
+            or FLAGS.dataset == "emnist-digits":
+        num_classes = 10
+    elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
+        num_classes = 47
+    elif FLAGS.dataset == "emnist-letters":
+        num_classes = 37
+    elif FLAGS.dataset == "emnist-byclass":
+        num_classes = 62
+
     with gzip.GzipFile(fileobj=f) as bytestream:
         magic = _read32(bytestream)
         if magic != 2049:
@@ -244,6 +253,7 @@ def read_data_sets_local(train_dir,
         TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
 
     elif FLAGS.dataset == "emnist-balanced":
+        print("Reading emnist-balanced")
         TRAIN_IMAGES = 'emnist-balanced-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-balanced-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-balanced-test-images-idx3-ubyte.gz'
@@ -341,7 +351,18 @@ def main(_):
     elif FLAGS.dataset == "emnist-digits":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
-
+    elif FLAGS.dataset == "emnist-balanced":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
+    elif FLAGS.dataset == "emnist-letters":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
+    elif FLAGS.dataset == "emnist-bymerge":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
+    elif FLAGS.dataset == "emnist-byclass":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
     tf.reset_default_graph()
 
     # Create the model
@@ -359,7 +380,7 @@ def main(_):
             print("Reading parameters from %s" % ckpt.model_checkpoint_path)
             caps_net.saver.restore(sess, ckpt.model_checkpoint_path)
         else:
-            print('Created model with fresh paramters.')
+            print('Created model with fresh parameters.')
             sess.run(tf.global_variables_initializer())
             print('Num params: %d' % sum(v.get_shape().num_elements()
                                          for v in tf.trainable_variables()))
