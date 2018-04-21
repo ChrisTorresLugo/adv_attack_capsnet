@@ -16,7 +16,6 @@ from config import cfg
 from six.moves import xrange
 from tensorflow.examples.tutorials.mnist import input_data
 
-from CapsNet import CapsNet
 from normal_cnn import deepnn
 
 FLAGS = None
@@ -369,35 +368,48 @@ def main(_):
     tf.reset_default_graph()
 
     # Create the model
-    caps_net = deepnn(mnist, FLAGS.dataset)
-    caps_net.creat_architecture()
+    x = tf.placeholder(tf.float32, [None, 784])
 
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-
-    train_dir = cfg.TRAIN_DIR
-    ckpt = tf.train.get_checkpoint_state(train_dir)
-
-    # FGSM and basic iter.
-    dy_dx,=tf.gradients(caps_net._loss,caps_net._x);
-    x_adv = tf.stop_gradient(caps_net._x +1*eps*tf.sign(dy_dx));
-    x_adv = tf.clip_by_value(x_adv, 0., 1.);
+    # Define loss and optimizer
+    y_ = tf.placeholder(tf.int64, [None])
     
-    with tf.Session(config=config) as sess:
-        if ckpt and cfg.USE_CKPT:
-            print("Reading parameters from %s" % ckpt.model_checkpoint_path)
-            caps_net.saver.restore(sess, ckpt.model_checkpoint_path)
-        else:
-            print('Created model with fresh paramters.')
-            sess.run(tf.global_variables_initializer())
-            print('Num params: %d' % sum(v.get_shape().num_elements()
-                                         for v in tf.trainable_variables()))
+    # Build the graph for the deep net
+    y_conv, keep_prob = deepnn(x)
 
-        caps_net.train_writer.add_graph(sess.graph)
-   
-        # caps_net.adv_validation(sess, 'train',x_adv,FLAGS.max_iter)
-        # caps_net.adv_validation(sess, 'validation',x_adv,FLAGS.max_iter)
-        caps_net.adv_validation(sess, 'test',x_adv,FLAGS.max_iter,"samples/gsm_"+str(FLAGS.max_iter)+"_"+str(FLAGS.max_epsilon)+".PNG")
+
+    with tf.name_scope('loss'):
+      cross_entropy = tf.losses.sparse_softmax_cross_entropy(
+        labels=y_, logits=y_conv)
+        cross_entropy = tf.reduce_mean(cross_entropy)
+
+    with tf.name_scope('adam_optimizer'):
+      train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+
+    with tf.name_scope('accuracy'):
+      correct_prediction = tf.equal(tf.argmax(y_conv, 1), y_)
+      correct_prediction = tf.cast(correct_prediction, tf.float32)
+      accuracy = tf.reduce_mean(correct_prediction)
+
+    graph_location = cfg.TRAIN_DIR
+    ckpt = tf.train.get_checkpoint_state(train_dir)
+    print('Saving graph to: %s' % graph_location)
+    train_writer = tf.summary.FileWriter(graph_location)
+    train_writer.add_graph(tf.get_default_graph())
+
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      for i in range(20000):
+        batch = mnist.train.next_batch(50)
+        if i % 100 == 0:
+          train_accuracy = accuracy.eval(feed_dict={
+            x: batch[0], y_: batch[1], keep_prob: 1.0})
+            print('step %d, training accuracy %g' % (i, train_accuracy))
+            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+
+    print('test accuracy %g' % accuracy.eval(feed_dict={
+        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+     
+    
 
 
 if __name__ == '__main__':
@@ -416,4 +428,4 @@ if __name__ == '__main__':
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
     # for model building test
-    # model_test()
+  
