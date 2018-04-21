@@ -367,7 +367,7 @@ def main(_):
     tf.reset_default_graph()
 
     # Create the model
-    caps_net = deepnn(mnist, FLAGS.dataset)
+    caps_net = deepnn(mnist)
     caps_net.creat_architecture()
 
     config = tf.ConfigProto()
