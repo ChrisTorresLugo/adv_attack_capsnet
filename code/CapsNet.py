@@ -48,10 +48,9 @@ class CapsNet(object):
         self._dataset_name = dataset_name
 
         # keep tracking of the dimension of feature maps
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
             self._dim = 28
-        # elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
-        #     self._dim = 32
+
         # store number of capsules of each capsule layer
         # the conv1-layer has 0 capsules
         self._num_caps = [0]
@@ -73,11 +72,9 @@ class CapsNet(object):
         """
         with tf.variable_scope('cap_' + str(idx)):
             w = tf.get_variable('w', shape=[9, 9, i_c, o_c], dtype=tf.float32)
-            cap = tf.nn.conv2d(input, w, [1, 2, 2, 1],
-                               padding='VALID', name='cap_conv')
+            cap = tf.nn.conv2d(input, w, [1, 2, 2, 1], padding='VALID', name='cap_conv')
             if cfg.USE_BIAS:
-                b = tf.get_variable('b', shape=[o_c, ], dtype=tf.float32,
-                                    initializer=self._b_initializer)
+                b = tf.get_variable('b', shape=[o_c, ], dtype=tf.float32, initializer=self._b_initializer)
                 cap = cap + b
             # cap with shape [None, 6, 6, 8] for mnist dataset
 
@@ -103,9 +100,7 @@ class CapsNet(object):
         num_caps = self._num_caps[layer_index]
         # weight matrix for capsules in "layer_index" layer
         # W_ij
-        cap_ws = tf.get_variable('cap_w', shape=[10, num_caps, 8, 16],
-                                 dtype=tf.float32,
-                                 )
+        cap_ws = tf.get_variable('cap_w', shape=[10, num_caps, 8, 16], dtype=tf.float32,)
         # initial value for "tf.scan", see official doc for details
         fn_init = tf.zeros([10, num_caps, 1, 16])
 
@@ -113,8 +108,7 @@ class CapsNet(object):
         # cap_ws with shape: [10, num_caps, 8, 16],
         # [8 x 16] for each pair of capsules between two layers
         # u_hat_j|i = W_ij * u_i
-        cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws),
-                               tf.tile(primary_caps, [1, 10, 1, 1, 1]),
+        cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 10, 1, 1, 1]),
                                initializer=fn_init, name='cap_predicts')
         # cap_predicts with shape: [None, 10, num_caps, 1, 16]
         cap_predictions = tf.squeeze(cap_predicts, axis=[3])
@@ -122,8 +116,7 @@ class CapsNet(object):
 
         # log prior probabilities
         log_prior = tf.get_variable('log_prior', shape=[10, num_caps], dtype=tf.float32,
-                                    initializer=tf.zeros_initializer(),
-                                    trainable=cfg.PRIOR_TRAINING)
+                                    initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
         # log_prior with shape: [10, num_caps]
         # V1. static way
         if cfg.ROUTING_WAY == 'static':
@@ -157,19 +150,16 @@ class CapsNet(object):
             s_t = tf.multiply(cap_predictions, c_expand)
             s = tf.reduce_sum(s_t, axis=[2])
             cap_out = squash(s)
-            delta_prior = tf.reduce_sum(tf.multiply(tf.expand_dims(cap_out, axis=2),
-                                                    cap_predictions),
-                                        axis=[-1])
+            delta_prior = tf.reduce_sum(tf.multiply(tf.expand_dims(cap_out, axis=2), cap_predictions), axis=[-1])
             prior = prior + delta_prior
 
             return [i - 1, prior, cap_out]
 
         condition = lambda i, proir, cap_out: i > 0
         _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
-                                             shape_invariants=[iters.get_shape(),
+                                                               shape_invariants=[iters.get_shape(),
                                                                tf.TensorShape([None, 10, num_caps]),
                                                                init_cap.get_shape()])
-
         return digit_caps
 
     def _dynamic_routingV1(self, prior, cap_predictions):
@@ -204,8 +194,7 @@ class CapsNet(object):
 
                 # u_hat_j|i * v_j
                 delta_prior = tf.reduce_sum(tf.multiply(tf.expand_dims(digit_caps, axis=2),
-                                                        cap_predictions),
-                                            axis=[-1])
+                                                        cap_predictions), axis=[-1])
                 # delta_prior shape: [None, 10, num_caps]
 
                 prior = prior + delta_prior
@@ -225,10 +214,8 @@ class CapsNet(object):
         # 1. only use the target capsule with dimension [None, 16] or [16,] (use it for default)
         # 2. use all the capsule, including the masked out ones with lots of zeros
         with tf.name_scope('reconstruct'):
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
                 y_ = tf.expand_dims(self._y_, axis=2)
-            # elif self._dataset_name == "cifar-10":
-            #     y_ = tf.expand_dims(self.label_, axis=2)
             # y_ shape: [None, 10, 1]
 
             # for method 1.
@@ -240,19 +227,10 @@ class CapsNet(object):
             # for method 2.
             # target_cap = tf.reshape(y_ * digit_caps, [-1, 10*16])
 
-            fc = slim.fully_connected(target_cap, 512,
-                                      weights_initializer=self._w_initializer)
-            fc = slim.fully_connected(fc, 1024,
-                                      weights_initializer=self._w_initializer)
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
-                fc = slim.fully_connected(fc, 784,
-                                      weights_initializer=self._w_initializer,
-                                      activation_fn=None)
-            # elif self._dataset_name == "cifar-10":
-            #     fc = slim.fully_connected(fc, 3072,
-            #                               weights_initializer=self._w_initializer,
-            #                               activation_fn=None)
-            # the last layer with sigmoid activation
+            fc = slim.fully_connected(target_cap, 512, weights_initializer=self._w_initializer)
+            fc = slim.fully_connected(fc, 1024, weights_initializer=self._w_initializer)
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
+                fc = slim.fully_connected(fc, 784, weights_initializer=self._w_initializer, activation_fn=None)
             out = tf.sigmoid(fc)
             # out with shape [None, 784]
 
@@ -275,22 +253,18 @@ class CapsNet(object):
             # loss of positive classes
             # max(0, m+ - ||v_c||) ^ 2
             with tf.name_scope('pos_loss'):
-                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
                     pos_loss = tf.maximum(0., cfg.M_POS - tf.reduce_sum(self._digit_caps_norm * self._y_,
                                                                     axis=1), name='pos_max')
-                # elif self._dataset_name == "cifar-10":
-                #     pos_loss = tf.maximum(0., cfg.M_POS - tf.reduce_sum(self._digit_caps_norm * self.label_,
-                #                                                         axis=1), name='pos_max')
                 pos_loss = tf.square(pos_loss, name='pos_square')
                 pos_loss = tf.reduce_mean(pos_loss)
             tf.summary.scalar('pos_loss', pos_loss)
             # pos_loss shape: [None, ]
 
             # get index of negative classes
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
                 y_negs = 1. - self._y_
-            # elif self._dataset_name == "cifar-10":
-            #     y_negs = 1. - self.label_
+
             # max(0, ||v_c|| - m-) ^ 2
             with tf.name_scope('neg_loss'):
                 neg_loss = tf.maximum(0., self._digit_caps_norm * y_negs - cfg.M_NEG)
@@ -303,13 +277,11 @@ class CapsNet(object):
 
             # loss of reconstruction
             with tf.name_scope('l2_loss'):
-                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+                if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
                     reconstruct_loss = tf.reduce_sum(tf.square(self._x - reconstruct), axis=-1)
                     reconstruct_loss = tf.reduce_mean(reconstruct_loss)
 
-                elif self._dataset_name == "cifar-10":
-                    reconstruct_loss = tf.reduce_sum(tf.square(self.image - reconstruct), axis=-1)
-                    reconstruct_loss = tf.reduce_mean(reconstruct_loss)
+
             tf.summary.scalar('reconstruct_loss', reconstruct_loss)
 
             total_loss = pos_loss + neg_loss + \
@@ -323,16 +295,10 @@ class CapsNet(object):
     def creat_architecture(self):
         """creat architecture of the whole network"""
         # set up placeholder of input data and labels
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
             self._x = tf.placeholder(tf.float32, [None, 784], name="mnist-image")
             self._y_ = tf.placeholder(tf.float32, [None, 10], name="mnist-label")
-        # elif self._dataset_name == "cifar-10":
-        #     # self._x = tf.placeholder(tf.float32, shape=[None, 3072])
-        #     # self._y_ = tf.placeholder(tf.float32, shape=[None, 10])
-        #     # https://lguduy.github.io/2017/06/30/TensorFlow-%E8%AE%AD%E7%BB%83%E6%A8%A1%E5%9E%8B/
-        #     self.image = tf.placeholder(tf.float32, shape=[None, 3072], name='image')
-        #     self.label_ = tf.placeholder(tf.float32, shape=[None, 10], name='label')
-        #     # self.label_ = tf.placeholder(tf.float32, shape=[10,], name='label')
+
 
         # set up initializer for weights and bias
         self._w_initializer = tf.truncated_normal_initializer(stddev=0.1)
@@ -370,12 +336,10 @@ class CapsNet(object):
         """build the graph of the network"""
 
         # reshape for conv ops
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" or self._dataset_name == "emnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" or self._dataset_name == "emnist-digits":
             with tf.name_scope('x_reshape'):
                 x_image = tf.reshape(self._x, [-1, 28, 28, 1])
-        # elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
-        #     with tf.name_scope("x_reshape"):
-        #         x_image = tf.reshape(self.image, [-1, 32, 32, 1])
+
 
 
         # initial conv1 op
@@ -448,18 +412,15 @@ class CapsNet(object):
     def _accuracy(self):
         with tf.name_scope('accuracy'):
             # digit_caps_norm = tf.norm(self._digit_caps, ord=2, axis=-1)
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
-                correct_prediction = tf.equal(tf.argmax(self._y_, 1),
+            correct_prediction = tf.equal(tf.argmax(self._y_, 1),
                                           tf.argmax(self._digit_caps_norm, 1))
-            # elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
-            #     correct_prediction = tf.equal(tf.argmax(self.label_, 1),
-            #                                   tf.argmax(self._digit_caps_norm, 1))
-            # correct_prediction = tf.cast(correct_prediction, tf.float32)
+            correct_prediction = tf.cast(correct_prediction, tf.float32)
             self.accuracy = tf.reduce_mean(correct_prediction)
             tf.summary.scalar('accuracy', self.accuracy)
 
+
     def train_with_summary(self, sess, batch_size=100, iters=0):
-        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+        if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
             batch = self._mnist.train.next_batch(batch_size)
 
             loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
@@ -467,88 +428,8 @@ class CapsNet(object):
                                                         feed_dict={self._x: batch[0],
                                                         self._y_: batch[1]})
 
-
-        # elif self._dataset_name == "cifar-10" or self._dataset_name == "cifar-100":
-        #     batch_size = 1000
-        #     cifar10_train_data, cifar10_test_data  = TFDB.dataset.image.cifar10('tmp/cifar10')
-        #     print("Here 1")
-        #
-        #     train_dataset = cifar10_train_data.batch(10)
-        #     test_dataset = cifar10_test_data.batch(10)
-        #     print("Here 2")
-        #
-        #     train_iterator = train_dataset.make_initializable_iterator()
-        #     train_imgs, train_labels = train_iterator.get_next()
-        #     print("Here 3")
-        #
-        #     test_iterator = test_dataset.make_initializable_iterator()
-        #     test_imgs, test_labels = test_iterator.get_next()
-        #     print("Here 4")
-        #
-        #     sess.run(train_iterator.initializer)
-        #     print("TYPE: " + str(type(train_imgs)))
-        #     while True:
-        #         try:
-        #             print("Try")
-        #             # o_images, o_labels = sess.run([train_imgs, train_labels])
-        #             print(sess.run([train_imgs, train_labels]))
-        #             # print(str(o_images.shape))
-        #             # print(str(o_labels.shape))
-        #
-        #
-        #             # loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-        #             #                                               self.accuracy, self._summary_op],
-        #             #                                              feed_dict={self.image: cifar10_train_data,
-        #             #                                                         self.label_: cifar10_train_labels})
-        #             # o_labels = np.reshape(o_labels, [1, 10])
-        #             # loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-        #             #                                             self.accuracy, self._summary_op],
-        #             #                                              feed_dict={self.image: o_images,
-        #             #                                                         self.label_: o_labels})
-        #             # print("Loss: " + str(loss))
-        #             # print("Train acc: " + str(train_acc))
-        #             # print("Train summary: " + str(train_summary))
-        #             return
-        #             # loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-        #             #                                               self.accuracy, self._summary_op],
-        #             #                                              feed_dict={self._x: train_imgs.eval(),
-        #             #                                                         self._y_: train_labels.eval()})
-        #             # o_images, o_labels = sess.run([train_imgs, train_labels, self._loss, self._train_op,
-        #             #                                             self.accuracy, self._summary_op])
-        #             # loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-        #             #                                             self.accuracy, self._summary_op])
-        #             # ...
-        #             # loss, _, train_acc, train_summary, o_images, o_labels = sess.run([self._loss, self._train_op,
-        #             #                                             self.accuracy, self._summary_op, train_imgs, train_labels])
-        #             # val = sess.run([train_imgs, train_labels])
-        #             # print(val)
-        #             # loss, _, train_acc, train_summary = sess.run(self._loss, self._train_op, self.accuracy)
-                except tf.errors.OutOfRangeError:
-                    print("Except")
-                    break
-
-            sess.run(test_iterator.initializer)
-            while True:
-                try:
-                    print("Try")
-                    _, _ = sess.run([test_imgs, test_labels])
-
-                except tf.errors.OutOfRangeError:
-                    print("Except")
-                    break
-
-
-
-            #
-            # loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
-            #                                             self.accuracy, self._summary_op],
-            #                                              feed_dict={self._x: train_imgs,
-            #                                                         self._y_: train_labels})
-
-            print("It worked!")
-
         if iters % cfg.PRINT_EVERY == 0 and iters > 0:
-            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist":
+            if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  or self._dataset_name == "emnist-digits":
                 val_batch = self._mnist.validation.next_batch(batch_size)
 
                 self.train_writer.add_summary(train_summary, iters)

@@ -17,7 +17,6 @@ from six.moves import xrange
 from tensorflow.examples.tutorials.mnist import input_data
 
 from CapsNet import CapsNet
-import TFDB
 
 FLAGS = None
 
@@ -37,8 +36,8 @@ from tensorflow.python.framework import random_seed
 from tensorflow.python.platform import gfile
 
 
-DEFAULT_SOURCE_URL = "/Users/christorreslugo/PycharmProjects/adv_attack_capsnet/code/data/emnist/"
-dataset = "emnist-mnist"
+DEFAULT_SOURCE_URL = "data/emnist/"
+# dataset = "emnist-mnist"
 
 def _read32(bytestream):
     dt = numpy.dtype(numpy.uint32).newbyteorder('>')
@@ -238,43 +237,43 @@ def read_data_sets_local(train_dir,
         source_url = DEFAULT_SOURCE_URL
 
 
-    if dataset == "mnist":
+    if FLAGS.dataset == "mnist":
         TRAIN_IMAGES = 'train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 't10k-images-idx3-ubyte.gz'
         TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-balanced":
+    elif FLAGS.dataset == "emnist-balanced":
         TRAIN_IMAGES = 'emnist-balanced-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-balanced-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-balanced-test-images-idx3-ubyte.gz'
         TEST_LABELS = 'emnist-balanced-test-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-byclass":
+    elif FLAGS.dataset == "emnist-byclass":
         TRAIN_IMAGES = 'emnist-byclass-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-byclass-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-byclass-test-images-idx3-ubyte.gz'
         TEST_LABELS = 'emnist-byclass-test-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-bymerge":
+    elif FLAGS.dataset == "emnist-bymerge":
         TRAIN_IMAGES = 'emnist-bymerge-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-bymerge-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-bymerge-test-images-idx3-ubyte.gz'
         TEST_LABELS = 'emnist-bymerge-test-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-digits":
+    elif FLAGS.dataset == "emnist-digits":
         TRAIN_IMAGES = 'emnist-digits-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-digits-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-digits-test-images-idx3-ubyte.gz'
         TEST_LABELS = 'emnist-digits-test-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-letters":
+    elif FLAGS.dataset == "emnist-letters":
         TRAIN_IMAGES = 'emnist-letters-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-letters-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-letters-test-images-idx3-ubyte.gz'
         TEST_LABELS = 'emnist-letters-test-labels-idx1-ubyte.gz'
 
-    elif dataset == "emnist-mnist":
+    elif FLAGS.dataset == "emnist-mnist":
         TRAIN_IMAGES = 'emnist-mnist-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-mnist-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-mnist-test-images-idx3-ubyte.gz'
@@ -330,17 +329,18 @@ def main(_):
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
         print("FORMAT: " + str(type(mnist)))
         print("FORMAT: " + str(type(mnist[0])))
-        return
     elif FLAGS.dataset == "fashion-mnist":
         print("Reading fashion mnist")
         mnist = input_data.read_data_sets('data/fashion',
                                   source_url='http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/', one_hot=True)
         print("Fashion-MNIST type: " + str(type(mnist)))
-        return
     elif FLAGS.dataset == "emnist":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
         print("e-MNIST type: " + str(type(mnist)))
+    elif FLAGS.dataset == "emnist-digits":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
 
     tf.reset_default_graph()
 
