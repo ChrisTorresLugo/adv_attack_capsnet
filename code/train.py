@@ -394,7 +394,7 @@ def main(_):
         for iters in xrange(cfg.MAX_ITERS):
             sys.stdout.write('>>> %d / %d \r' % (iters % cfg.PRINT_EVERY, cfg.PRINT_EVERY))
             sys.stdout.flush()
-            caps_net.train_with_summary(sess, batch_size=100, iters=iters)
+            caps_net.train_with_summary(sess, batch_size=FLAGS.batch_size, iters=iters)
             if iters % cfg.PRINT_EVERY == 0 and iters > 0:
                 toc = time.time()
                 print('average time: %.2f secs' % (toc - tic))
@@ -410,6 +410,8 @@ if __name__ == '__main__':
                         help='Directory for storing input data')
     parser.add_argument('--dataset', type = str, default = "mnist",
                         help='Dataset used to train the model')
+    parser.add_argument('--batch_size', type = int, default = 100,
+                        help='Batch size')
     FLAGS, unparsed = parser.parse_known_args()
     print(FLAGS.dataset)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
