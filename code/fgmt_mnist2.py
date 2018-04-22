@@ -31,6 +31,10 @@ parser.add_argument('--batch_size', type=int, default=100,
                     help='Batch size')
 parser.add_argument('--train_epochs', type=int, default=5000,
                     help='Iterations')
+parser.add_argument('--epsilon', type=int, default=10,
+                    help='Epsilon - Amount of noise to be added')
+parser.add_argument('--loadModel', type=str, default="False",
+                    help='Load an old model instead of training a new one from scratch')
 FLAGS, unparsed = parser.parse_known_args()
 print(FLAGS.dataset)
 
@@ -360,7 +364,7 @@ def make_fgmt(sess, env, X_data, epochs=1, eps=0.01, batch_size=128):
 
 print('\nTraining')
 
-train(sess, env, X_train, y_train, X_valid, y_valid, load=False, epochs=FLAGS.train_epochs,
+train(sess, env, X_train, y_train, X_valid, y_valid, load=FLAGS.loadModel, epochs=FLAGS.train_epochs,
       name='mnist')
 
 print('\nEvaluating on clean data')
@@ -369,7 +373,7 @@ evaluate(sess, env, X_test, y_test)
 
 print('\nGenerating adversarial data')
 
-X_adv = make_fgmt(sess, env, X_test, eps=0.02, epochs=8)
+X_adv = make_fgmt(sess, env, X_test, eps=FLAGS.epsilon, epochs=8)
 
 print('\nEvaluating on adversarial data')
 
