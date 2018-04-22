@@ -18,7 +18,14 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 from normal_cnn import deepnn
 
+
 FLAGS = None
+
+
+def model_test():
+    model = deepnn(None)
+    model.creat_architecture()
+    print("pass")
 
 # Taken from: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/learn/python/learn/datasets/mnist.py
 # ****************************************************
@@ -31,7 +38,6 @@ from tensorflow.python.platform import gfile
 
 
 DEFAULT_SOURCE_URL = "data/emnist/"
-# dataset = "emnist-mnist"
 
 def _read32(bytestream):
     dt = numpy.dtype(numpy.uint32).newbyteorder('>')
@@ -86,10 +92,12 @@ def extract_labels(f, one_hot=False, num_classes=10):
     if FLAGS.dataset == "mnist" or FLAGS.dataset == "fashion-mnist" \
             or FLAGS.dataset == "emnist-digits":
         num_classes = 10
-    elif FLAGS.dataset == "emnist-balanced":
+    elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
         num_classes = 47
     elif FLAGS.dataset == "emnist-letters":
         num_classes = 37
+    elif FLAGS.dataset == "emnist-byclass":
+        num_classes = 62
 
     with gzip.GzipFile(fileobj=f) as bytestream:
         magic = _read32(bytestream)
@@ -325,18 +333,9 @@ def load_mnist(train_dir='MNIST-data'):
 
 # ****************************************************
 
-def model_test():
-    model = deepnn(None)
-    model.creat_architecture()
-    print("pass")
-
 
 def main(_):
-    # Max Epsilon
-    eps = 1.0 * FLAGS.max_epsilon / 256.0 /FLAGS.max_iter;
     # Import data
-
-    # mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
     if FLAGS.dataset == "mnist":
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
         print("FORMAT: " + str(type(mnist)))
@@ -368,48 +367,41 @@ def main(_):
     tf.reset_default_graph()
 
     # Create the model
-    x = tf.placeholder(tf.float32, [None, 784])
+    caps_net = deepnn(mnist)
+    caps_net.creat_architecture()
 
-    # Define loss and optimizer
-    y_ = tf.placeholder(tf.int64, [None])
-    
-    # Build the graph for the deep net
-    y_conv, keep_prob = deepnn(x)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
 
+    train_dir = cfg.TRAIN_DIR
+    ckpt = tf.train.get_checkpoint_state(train_dir)
 
-    with tf.name_scope('loss'):
-      cross_entropy = tf.losses.sparse_softmax_cross_entropy(
-        labels=y_, logits=y_conv)
-    cross_entropy = tf.reduce_mean(cross_entropy)
+    with tf.Session(config=config) as sess:
+        if ckpt and cfg.USE_CKPT:
+            print("Reading parameters from %s" % ckpt.model_checkpoint_path)
+            caps_net.saver.restore(sess, ckpt.model_checkpoint_path)
+        else:
+            print('Created model with fresh parameters.')
+            sess.run(tf.global_variables_initializer())
+            print('Num params: %d' % sum(v.get_shape().num_elements()
+                                         for v in tf.trainable_variables()))
+        # for test
+        # caps_net.test(sess, 'validation')
+        # exit()
 
-    with tf.name_scope('adam_optimizer'):
-      train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-
-    with tf.name_scope('accuracy'):
-      correct_prediction = tf.equal(tf.argmax(y_conv, 1), y_)
-      correct_prediction = tf.cast(correct_prediction, tf.float32)
-    accuracy = tf.reduce_mean(correct_prediction)
-
-    graph_location = cfg.TRAIN_DIR
-    ckpt = tf.train.get_checkpoint_state(graph_location)
-    print('Saving graph to: %s' % graph_location)
-    train_writer = tf.summary.FileWriter(graph_location)
-    train_writer.add_graph(tf.get_default_graph())
-
-    with tf.Session() as sess:
-      sess.run(tf.global_variables_initializer())
-      for i in range(20000):
-        batch = mnist.train.next_batch(50)
-        if i % 100 == 0:
-          train_accuracy = accuracy.eval(feed_dict={
-            x: batch[0], y_: batch[1], keep_prob: 1.0})
-          print('step %d, training accuracy %g' % (i, train_accuracy))
-        train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-
-    print('test accuracy %g' % accuracy.eval(feed_dict={
-        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
-     
-    
+        caps_net.train_writer.add_graph(sess.graph)
+        iters = 0
+        tic = time.time()
+        for iters in xrange(cfg.MAX_ITERS):
+            sys.stdout.write('>>> %d / %d \r' % (iters % cfg.PRINT_EVERY, cfg.PRINT_EVERY))
+            sys.stdout.flush()
+            caps_net.train_with_summary(sess, batch_size=100, iters=iters)
+            if iters % cfg.PRINT_EVERY == 0 and iters > 0:
+                toc = time.time()
+                print('average time: %.2f secs' % (toc - tic))
+                tic = time.time()
+        caps_net.snapshot(sess, iters)
+        caps_net.test(sess, 'test')
 
 
 if __name__ == '__main__':
@@ -417,15 +409,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default=cfg.DATA_DIR,
                         help='Directory for storing input data')
-    parser.add_argument('--max_epsilon', type=int, default=10,
-                        help='max_epsilon')
-    parser.add_argument('--max_iter', type=int, default=1,
-                        help='max iteration')
     parser.add_argument('--dataset', type = str, default = "mnist",
                         help='Dataset used to train the model')
-
     FLAGS, unparsed = parser.parse_known_args()
+    print(FLAGS.dataset)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
 
     # for model building test
-  
+    # model_test()
+
+
+
