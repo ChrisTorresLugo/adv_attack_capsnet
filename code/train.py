@@ -363,6 +363,9 @@ def main(_):
     elif FLAGS.dataset == "emnist-byclass":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
+    elif FLAGS.dataset == "emnist-mnist":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
     tf.reset_default_graph()
 
     # Create the model
