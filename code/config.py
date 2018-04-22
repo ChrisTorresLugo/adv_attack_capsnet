@@ -53,7 +53,7 @@ __C.PRINT_EVERY = 10
 __C.SAVE_EVERY = 500
 
 # number of training iterations
-__C.MAX_ITERS = 1500
+__C.MAX_ITERS = 5000
 
 # training mode
 __C.PRIOR_TRAINING = False

@@ -400,9 +400,9 @@ def main(_):
     neg_loss = tf.reduce_mean(neg_loss)
     loss = pos_loss + neg_loss + cfg.RECONSTRUCT_W * caps_net.reconstruct_loss
     # step l.l and iter. l.l
-    dy_dx,=tf.gradients(loss, caps_net._x);
-    x_adv = tf.stop_gradient(caps_net._x -1*eps*tf.sign(dy_dx));
-    x_adv = tf.clip_by_value(x_adv, 0., 1.);
+    dy_dx,=tf.gradients(loss, caps_net._x)
+    x_adv = tf.stop_gradient(caps_net._x -1*eps*tf.sign(dy_dx))
+    x_adv = tf.clip_by_value(x_adv, 0., 1.)
    
     with tf.Session(config=config) as sess:
         if ckpt and cfg.USE_CKPT:
@@ -426,14 +426,12 @@ def main(_):
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, default=cfg.DATA_DIR, help='Directory for storing input data')
     parser.add_argument('--max_epsilon', type=int, default=10, help='max_epsilon')
     parser.add_argument('--max_iter', type=int, default=1, help='max iteration')
     parser.add_argument('--dataset', type = str, default = "mnist", help='Dataset used to train the model')
     parser.add_argument('--mode', type = str, default = "test", help='train, test, or validation')
-
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

@@ -587,7 +587,7 @@ class CapsNet(object):
         print("whole {} accuracy: {}".format(set, all_ac))
    
     # added by Jaesik Yoon 
-    def adv_validation(self, sess, set, x_adv, max_iter,fname=None):
+    def adv_validation(self, sess, set, x_adv, max_iter, fname=None):
         if set == 'test':
             x = self._mnist.test.images
             y_ = self._mnist.test.labels
