@@ -17,9 +17,6 @@ from config import cfg
 #Added by Jaesik Yoon
 from get_data import image_save
 
-import TFDB
-
-
 def squash(cap_input):
     """
     squash function for keep the length of capsules between 0 - 1
