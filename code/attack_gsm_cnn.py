@@ -380,7 +380,7 @@ def main(_):
     with tf.name_scope('loss'):
       cross_entropy = tf.losses.sparse_softmax_cross_entropy(
         labels=y_, logits=y_conv)
-        cross_entropy = tf.reduce_mean(cross_entropy)
+    cross_entropy = tf.reduce_mean(cross_entropy)
 
     with tf.name_scope('adam_optimizer'):
       train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
@@ -388,7 +388,7 @@ def main(_):
     with tf.name_scope('accuracy'):
       correct_prediction = tf.equal(tf.argmax(y_conv, 1), y_)
       correct_prediction = tf.cast(correct_prediction, tf.float32)
-      accuracy = tf.reduce_mean(correct_prediction)
+    accuracy = tf.reduce_mean(correct_prediction)
 
     graph_location = cfg.TRAIN_DIR
     ckpt = tf.train.get_checkpoint_state(train_dir)
@@ -404,7 +404,7 @@ def main(_):
           train_accuracy = accuracy.eval(feed_dict={
             x: batch[0], y_: batch[1], keep_prob: 1.0})
             print('step %d, training accuracy %g' % (i, train_accuracy))
-            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+        train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
     print('test accuracy %g' % accuracy.eval(feed_dict={
         x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
