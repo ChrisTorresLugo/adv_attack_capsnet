@@ -49,7 +49,7 @@ class CapsNet(object):
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                 or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                 or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                or self._dataset_name == "emnist-byclass":
+                or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
             self._dim = 28
 
         # store number of capsules of each capsule layer
@@ -102,7 +102,7 @@ class CapsNet(object):
         # weight matrix for capsules in "layer_index" layer
         # W_ij
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
-                or self._dataset_name == "emnist-digits":
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-mnist":
             cap_ws = tf.get_variable('cap_w', shape=[10, num_caps, 8, 16], dtype=tf.float32,)
             # initial value for "tf.scan", see official doc for details
             fn_init = tf.zeros([10, num_caps, 1, 16])
@@ -174,6 +174,7 @@ class CapsNet(object):
             log_prior = tf.get_variable('log_prior', shape=[62, num_caps], dtype=tf.float32,
                                         initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
             # log_prior with shape: [10, num_caps]
+        
 
         # V1. static way
         if self._routing == 'static':
@@ -214,7 +215,7 @@ class CapsNet(object):
 
         condition = lambda i, proir, cap_out: i > 0
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
-                or self._dataset_name == "emnist-digits":
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-mnist":
             _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
                                                  shape_invariants=[iters.get_shape(),
                                                                    tf.TensorShape([None, 10, num_caps]),
@@ -291,7 +292,7 @@ class CapsNet(object):
             if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                     or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                     or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                    or self._dataset_name == "emnist-byclass":
+                    or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                 y_ = tf.expand_dims(self._y_, axis=2)
             # y_ shape: [None, 10, 1]
 
@@ -309,7 +310,7 @@ class CapsNet(object):
             if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                     or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                     or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                    or self._dataset_name == "emnist-byclass":
+                    or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                 fc = slim.fully_connected(fc, 784, weights_initializer=self._w_initializer, activation_fn=None)
             out = tf.sigmoid(fc)
             # out with shape [None, 784]
@@ -336,7 +337,7 @@ class CapsNet(object):
                 if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                         or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                         or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                        or self._dataset_name == "emnist-byclass":
+                        or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                     pos_loss = tf.maximum(0., cfg.M_POS - tf.reduce_sum(self._digit_caps_norm * self._y_,
                                                                     axis=1), name='pos_max')
                 pos_loss = tf.square(pos_loss, name='pos_square')
@@ -348,7 +349,7 @@ class CapsNet(object):
             if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                     or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                     or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                    or self._dataset_name == "emnist-byclass":
+                    or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                 y_negs = 1. - self._y_
 
             # max(0, ||v_c|| - m-) ^ 2
@@ -366,7 +367,7 @@ class CapsNet(object):
                 if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                         or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                         or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge"\
-                        or self._dataset_name == "emnist-byclass":
+                        or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                     reconstruct_loss = tf.reduce_sum(tf.square(self._x - reconstruct), axis=-1)
                     reconstruct_loss = tf.reduce_mean(reconstruct_loss)
 
@@ -385,7 +386,7 @@ class CapsNet(object):
         """creat architecture of the whole network"""
         # set up placeholder of input data and labels
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
-                or self._dataset_name == "emnist-digits":
+                or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-mnist":
             self._x = tf.placeholder(tf.float32, [None, 784], name="mnist-image")
             self._y_ = tf.placeholder(tf.float32, [None, 10], name="mnist-label")
         elif self._dataset_name == "emnist-balanced" or self._dataset_name == "emnist-bymerge":
@@ -437,7 +438,7 @@ class CapsNet(object):
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist" \
                 or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                 or self._dataset_name == "emnist-letters"  or self._dataset_name == "emnist-bymerge" \
-                or self._dataset_name == "emnist-byclass":
+                or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
             with tf.name_scope('x_reshape'):
                 x_image = tf.reshape(self._x, [-1, 28, 28, 1])
 
@@ -524,7 +525,7 @@ class CapsNet(object):
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                 or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                 or self._dataset_name == "emnist-letters"  or self._dataset_name == "emnist-bymerge" \
-                or self._dataset_name == "emnist-byclass":
+                or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
             batch = self._mnist.train.next_batch(batch_size)
 
             loss, _, train_acc, train_summary = sess.run([self._loss, self._train_op,
@@ -536,7 +537,7 @@ class CapsNet(object):
             if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                     or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                     or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                    or self._dataset_name == "emnist-byclass":
+                    or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
                 val_batch = self._mnist.validation.next_batch(batch_size)
 
                 self.train_writer.add_summary(train_summary, iters)
