@@ -49,7 +49,7 @@ class CapsNet(object):
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                 or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                 or self._dataset_name == "emnist-letters" or self._dataset_name == "emnist-bymerge" \
-                or self._dataset_name == "emnist-byclass":
+                or self._dataset_name == "emnist-byclass" or self._dataset_name == "emnist-mnist":
             self._dim = 28
 
         # store number of capsules of each capsule layer
