@@ -391,7 +391,7 @@ def main(_):
     accuracy = tf.reduce_mean(correct_prediction)
 
     graph_location = cfg.TRAIN_DIR
-    ckpt = tf.train.get_checkpoint_state(train_dir)
+    ckpt = tf.train.get_checkpoint_state(graph_location)
     print('Saving graph to: %s' % graph_location)
     train_writer = tf.summary.FileWriter(graph_location)
     train_writer.add_graph(tf.get_default_graph())
