@@ -366,7 +366,7 @@ def main(_):
     tf.reset_default_graph()
 
     # Create the model
-    caps_net = CapsNet(mnist, FLAGS.dataset)
+    caps_net = CapsNet(mnist, FLAGS.dataset, FLAGS.routing)
     caps_net.creat_architecture()
 
     config = tf.ConfigProto()
@@ -412,6 +412,8 @@ if __name__ == '__main__':
                         help='Dataset used to train the model')
     parser.add_argument('--batch_size', type = int, default = 100,
                         help='Batch size')
+    parser.add_argument('--routing', type = str, default = "dynamic",
+                        help='dynamic or static')
     FLAGS, unparsed = parser.parse_known_args()
     print(FLAGS.dataset)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

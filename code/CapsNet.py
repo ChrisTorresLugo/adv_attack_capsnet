@@ -42,10 +42,11 @@ def squash(cap_input):
 
 
 class CapsNet(object):
-    def __init__(self, mnist, dataset_name):
+    def __init__(self, mnist, dataset_name, routing):
         """initial class with mnist dataset"""
         self._mnist = mnist
         self._dataset_name = dataset_name
+        self._routing = routing
 
         # keep tracking of the dimension of feature maps
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
@@ -99,7 +100,6 @@ class CapsNet(object):
         :return
             digit_caps: the output of digit capsule layer output, with shape: [None, 10, 16]
         """
-        print("DYNAMIC ROUTING V1")
         # number of the capsules in current layer
         num_caps = self._num_caps[layer_index]
         # weight matrix for capsules in "layer_index" layer
@@ -179,10 +179,10 @@ class CapsNet(object):
             # log_prior with shape: [10, num_caps]
 
         # V1. static way
-        if cfg.ROUTING_WAY == 'static':
+        if self._routing == 'static':
             digit_caps = self._dynamic_routingV1(log_prior, cap_predictions)
         # V2. dynamic way
-        elif cfg.ROUTING_WAY == 'dynamic':
+        elif self._routing == 'dynamic':
             digit_caps = self._dynamic_routingV2(log_prior, cap_predictions, num_caps)
         else:
             raise NotImplementedError
@@ -468,8 +468,8 @@ class CapsNet(object):
             print("BEFORE: " + str(self._dim))
             self._dim = (self._dim - 9) // 1 + 1
             print("AFTER: " + str(self._dim))
-            # assert self._dim == 20, "after conv1, dimensions of feature map" \
-            #                         "should be 20x20"
+            assert self._dim == 20, "after conv1, dimensions of feature map" \
+                                    "should be 20x20"
 
             # conv1 with shape [None, 20, 20, 256]
 
@@ -480,7 +480,7 @@ class CapsNet(object):
             self._dim = (self._dim - 9) // 2 + 1
             # number of primary caps: 6x6x32 = 1152
             self._num_caps.append(self._dim ** 2 * cfg.PRIMARY_CAPS_CHANNELS)
-            # assert self._dim == 6, "dims for primary caps grid should be 6x6."
+            assert self._dim == 6, "dims for primary caps grid should be 6x6."
 
             # build up PriamryCaps with 32 channels and 8-D vector
             # 1. dummy solution

@@ -368,7 +368,7 @@ def main(_):
     tf.reset_default_graph()
 
     # Create the model
-    caps_net = CapsNet(mnist, FLAGS.dataset)
+    caps_net = CapsNet(mnist, FLAGS.dataset, FLAGS.routing)
     caps_net.creat_architecture()
 
     config = tf.ConfigProto()
@@ -403,6 +403,7 @@ def main(_):
                                     str(FLAGS.max_iter) + "_" + str(FLAGS.max_epsilon) + ".PNG")
 
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -414,6 +415,9 @@ if __name__ == '__main__':
                         help='max iteration')
     parser.add_argument('--dataset', type = str, default = "mnist",
                         help='Dataset used to train the model')
+    parser.add_argument('--mode', type = str, default = "test", help='train, test, or validation')
+    parser.add_argument('--routing', type = str, default = "dynamic", help='dynamic or static')
+
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
