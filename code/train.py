@@ -94,7 +94,7 @@ def extract_labels(f, one_hot=False, num_classes=10):
     elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
         num_classes = 47
     elif FLAGS.dataset == "emnist-letters":
-        num_classes = 37
+        num_classes = 27
     elif FLAGS.dataset == "emnist-byclass":
         num_classes = 62
 

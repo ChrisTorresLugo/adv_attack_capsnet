@@ -188,7 +188,8 @@ def model(x, logits=False, training=False):
         z = tf.layers.dense(z, units=128, activation=tf.nn.relu)
         z = tf.layers.dropout(z, rate=0.25, training=training)
 
-    if FLAGS.dataset == "mnist" or FLAGS.dataset == "emnist-mnist" or FLAGS.dataset == "emnist-digits":
+    if FLAGS.dataset == "mnist" or FLAGS.dataset == "emnist-mnist" or FLAGS.dataset == "emnist-digits"\
+            or FLAGS.dataset == "fashion-mnist":
         logits_ = tf.layers.dense(z, units=10, name='logits')
     elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
         logits_ = tf.layers.dense(z, units=47, name='logits')
