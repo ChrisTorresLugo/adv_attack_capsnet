@@ -13,12 +13,35 @@ import matplotlib.gridspec as gridspec
 
 import tensorflow as tf
 
+import argparse
 from fast_gradient import fgmt
 
 
 img_size = 28
 img_chan = 1
+global n_classes
 n_classes = 10
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_dir', type=str, default="data/emnist",
+                    help='Directory for storing input data')
+parser.add_argument('--dataset', type=str, default="mnist",
+                    help='Dataset used to train the model')
+parser.add_argument('--batch_size', type=int, default=100,
+                    help='Batch size')
+parser.add_argument('--train_epochs', type=int, default=5000,
+                    help='Iterations')
+FLAGS, unparsed = parser.parse_known_args()
+print(FLAGS.dataset)
+
+if FLAGS.dataset == "mnist" or FLAGS.dataset == "emnist-mnist" or FLAGS.dataset == "emnist-digits":
+    n_classes = 10
+elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
+    n_classes = 47
+elif FLAGS.dataset == "emnist-byclass":
+    n_classes = 62
+elif FLAGS.dataset == "emnist-letters":
+    n_classes = 27
 
 def load_mnist(path, kind='train'):
     import os
@@ -26,12 +49,78 @@ def load_mnist(path, kind='train'):
     import numpy as np
 
     """Load MNIST data from `path`"""
-    labels_path = os.path.join(path,
-                               'emnist-mnist-%s-labels-idx1-ubyte.gz'
-                               % kind)
-    images_path = os.path.join(path,
-                               'emnist-mnist-%s-images-idx3-ubyte.gz'
-                               % kind)
+
+    if FLAGS.dataset == "emnist-mnist":
+        labels_path = os.path.join(path,
+                                   'emnist-mnist-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-mnist-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 10
+
+    elif FLAGS.dataset == "emnist-balanced":
+        labels_path = os.path.join(path,
+                                   'emnist-balanced-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-balanced-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 47
+
+    elif FLAGS.dataset == "emnist-byclass":
+        labels_path = os.path.join(path,
+                                   'emnist-byclass-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-byclass-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 62
+
+    elif FLAGS.dataset == "emnist-bymerge":
+        labels_path = os.path.join(path,
+                                   'emnist-bymerge-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-bymerge-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 47
+
+
+    elif FLAGS.dataset == "emnist-digits":
+        labels_path = os.path.join(path,
+                                   'emnist-digits-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-digits-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 10
+
+    elif FLAGS.dataset == "emnist-letters":
+        labels_path = os.path.join(path,
+                                   'emnist-letters-%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join(path,
+                                   'emnist-letters-%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 37
+
+    elif FLAGS.dataset == "fashion-mnist" and kind == "train":
+        labels_path = os.path.join("data/fashion",
+                                   '%s-labels-idx1-ubyte.gz'
+                                   % kind)
+        images_path = os.path.join("data/fashion",
+                                   '%s-images-idx3-ubyte.gz'
+                                   % kind)
+        n_classes = 10
+
+    elif FLAGS.dataset == "fashion-mnist" and kind == "test":
+        labels_path = os.path.join("data/fashion",
+                                   't10k-labels-idx1-ubyte.gz')
+        images_path = os.path.join("data/fashion",
+                                   't10k-images-idx3-ubyte.gz')
+        n_classes = 10
+
 
     with gzip.open(labels_path, 'rb') as lbpath:
         labels = np.frombuffer(lbpath.read(), dtype=np.uint8,
@@ -45,10 +134,12 @@ def load_mnist(path, kind='train'):
 
 print('\nLoading MNIST')
 
-# mnist = tf.keras.datasets.mnist
-# (X_train, y_train), (X_test, y_test) = mnist.load_data()
-(X_train, y_train) = load_mnist(path="data/emnist", kind="train")
-(X_test, y_test) = load_mnist(path="data/emnist", kind="test")
+if FLAGS.dataset == "mnist":
+    mnist = tf.keras.datasets.mnist
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+else:
+    (X_train, y_train) = load_mnist(path="data/emnist", kind="train")
+    (X_test, y_test) = load_mnist(path="data/emnist", kind="test")
 
 X_train = np.reshape(X_train, [-1, img_size, img_size, img_chan])
 X_train = X_train.astype(np.float32) / 255
@@ -93,7 +184,15 @@ def model(x, logits=False, training=False):
         z = tf.layers.dense(z, units=128, activation=tf.nn.relu)
         z = tf.layers.dropout(z, rate=0.25, training=training)
 
-    logits_ = tf.layers.dense(z, units=10, name='logits')
+    if FLAGS.dataset == "mnist" or FLAGS.dataset == "emnist-mnist" or FLAGS.dataset == "emnist-digits":
+        logits_ = tf.layers.dense(z, units=10, name='logits')
+    elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
+        logits_ = tf.layers.dense(z, units=47, name='logits')
+    elif FLAGS.dataset == "emnist-byclass":
+        logits_ = tf.layers.dense(z, units=62, name='logits')
+    elif FLAGS.dataset == "emnist-letters":
+        logits_ = tf.layers.dense(z, units=27, name='logits')
+
     y = tf.nn.softmax(logits_, name='ybar')
 
     if logits:
@@ -261,7 +360,7 @@ def make_fgmt(sess, env, X_data, epochs=1, eps=0.01, batch_size=128):
 
 print('\nTraining')
 
-train(sess, env, X_train, y_train, X_valid, y_valid, load=False, epochs=5,
+train(sess, env, X_train, y_train, X_valid, y_valid, load=False, epochs=FLAGS.train_epochs,
       name='mnist')
 
 print('\nEvaluating on clean data')
@@ -313,4 +412,4 @@ print('\nSaving figure')
 
 gs.tight_layout(fig)
 os.makedirs('img', exist_ok=True)
-plt.savefig('img/fgmt_mnist2.png')
+plt.savefig('img/fgmt_%s2.png' % FLAGS.dataset)
