@@ -400,7 +400,7 @@ def main(_):
     neg_loss = tf.reduce_mean(neg_loss)
     loss = pos_loss + neg_loss + cfg.RECONSTRUCT_W * caps_net.reconstruct_loss
     # step l.l and iter. l.l
-    dy_dx,=tf.gradients(loss,caps_net._x);
+    dy_dx,=tf.gradients(loss, caps_net._x);
     x_adv = tf.stop_gradient(caps_net._x -1*eps*tf.sign(dy_dx));
     x_adv = tf.clip_by_value(x_adv, 0., 1.);
    
@@ -415,10 +415,14 @@ def main(_):
                                          for v in tf.trainable_variables()))
 
         caps_net.train_writer.add_graph(sess.graph)
-   
-        #caps_net.adv_validation(sess, 'train',x_adv,FLAGS.max_iter)
-        #caps_net.adv_validation(sess, 'validation',x_adv,FLAGS.max_iter)
-        caps_net.adv_validation(sess, 'test',x_adv,FLAGS.max_iter,"samples/llcm_"+str(FLAGS.max_iter)+"_"+str(FLAGS.max_epsilon)+".PNG")
+
+        if FLAGS.mode == "train":
+            caps_net.adv_validation(sess, 'train', x_adv, FLAGS.max_iter)
+        elif FLAGS.mode == "validation":
+            caps_net.adv_validation(sess, 'validation',x_adv, FLAGS.max_iter)
+        elif FLAGS.mode == "test":
+            caps_net.adv_validation(sess, 'test', x_adv, FLAGS.max_iter, "samples/llcm_"
+                                    + str(FLAGS.max_iter) + "_" + str(FLAGS.max_epsilon) + ".PNG")
 
 
 if __name__ == '__main__':
@@ -428,6 +432,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_epsilon', type=int, default=10, help='max_epsilon')
     parser.add_argument('--max_iter', type=int, default=1, help='max iteration')
     parser.add_argument('--dataset', type = str, default = "mnist", help='Dataset used to train the model')
+    parser.add_argument('--mode', type = str, default = "test", help='train, test, or validation')
+
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

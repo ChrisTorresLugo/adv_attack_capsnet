@@ -393,10 +393,14 @@ def main(_):
                                          for v in tf.trainable_variables()))
 
         caps_net.train_writer.add_graph(sess.graph)
-   
-        # caps_net.adv_validation(sess, 'train',x_adv,FLAGS.max_iter)
-        # caps_net.adv_validation(sess, 'validation',x_adv,FLAGS.max_iter)
-        caps_net.adv_validation(sess, 'test',x_adv,FLAGS.max_iter,"samples/gsm_"+str(FLAGS.max_iter)+"_"+str(FLAGS.max_epsilon)+".PNG")
+
+        if FLAGS.mode == "train":
+            caps_net.adv_validation(sess, 'train', x_adv, FLAGS.max_iter)
+        elif FLAGS.mode == "validation":
+            caps_net.adv_validation(sess, 'validation', x_adv, FLAGS.max_iter)
+        elif FLAGS.mode == "test":
+            caps_net.adv_validation(sess, 'test', x_adv, FLAGS.max_iter, "samples/gsm_" +
+                                    str(FLAGS.max_iter) + "_" + str(FLAGS.max_epsilon) + ".PNG")
 
 
 if __name__ == '__main__':
