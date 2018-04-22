@@ -337,6 +337,8 @@ def main(_):
     # Import data
 
     # mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+    num_labels = 10
+    
     if FLAGS.dataset == "mnist":
         mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
         print("FORMAT: " + str(type(mnist)))
@@ -356,9 +358,11 @@ def main(_):
     elif FLAGS.dataset == "emnist-balanced":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
+        num_labels = 47
     elif FLAGS.dataset == "emnist-letters":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
+        num_labels = 37
     elif FLAGS.dataset == "emnist-bymerge":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
@@ -367,15 +371,16 @@ def main(_):
         mnist = read_data_sets_local('data/emnist', one_hot=True)
     tf.reset_default_graph()
 
-    # Create the model
+    
+    
     x = tf.placeholder(tf.float32, [None, 784])
 
     # Define loss and optimizer
-    y_ = tf.placeholder(tf.int64, [None])
+    y_ = tf.placeholder(tf.int64, [None, num_labels])
     
     # Build the graph for the deep net
-    y_conv, keep_prob = deepnn(x)
-
+    y_conv, keep_prob = deepnn(x, num_labels)
+    
 
     with tf.name_scope('loss'):
       cross_entropy = tf.losses.sparse_softmax_cross_entropy(
