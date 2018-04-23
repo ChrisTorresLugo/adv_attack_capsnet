@@ -381,7 +381,7 @@ def main(_):
 
     # loss for the least label
     if FLAGS.dataset == "mnist" or FLAGS.dataset == "fashion-mnist" \
-            or FLAGS.dataset == "emnist-digits" of FLAGS.dataset == "emnist-mnist":
+            or FLAGS.dataset == "emnist-digits" or FLAGS.dataset == "emnist-mnist":
         target = tf.one_hot(tf.argmin(caps_net._digit_caps_norm,1), 10, on_value=1.,off_value=0.)
 
     elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
