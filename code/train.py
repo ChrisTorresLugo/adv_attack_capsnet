@@ -394,7 +394,7 @@ def main(_):
         caps_net.train_writer.add_graph(sess.graph)
         iters = 0
         tic = time.time()
-        for iters in xrange(cfg.MAX_ITERS):
+        for iters in xrange(FLAGS.iterations):
             sys.stdout.write('>>> %d / %d \r' % (iters % cfg.PRINT_EVERY, cfg.PRINT_EVERY))
             sys.stdout.flush()
             caps_net.train_with_summary(sess, batch_size=FLAGS.batch_size, iters=iters)
@@ -417,6 +417,8 @@ if __name__ == '__main__':
                         help='Batch size')
     parser.add_argument('--routing', type = str, default = "dynamic",
                         help='dynamic or static')
+    parser.add_argument('--iterations', type = int, default = 5000,
+                        help='number of iterations')
     FLAGS, unparsed = parser.parse_known_args()
     print(FLAGS.dataset)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
