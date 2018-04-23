@@ -84,7 +84,7 @@ def extract_labels(f, one_hot=False, num_classes=10):
     """
     print('Extracting', f.name)
     if FLAGS.dataset == "mnist" or FLAGS.dataset == "fashion-mnist" \
-            or FLAGS.dataset == "emnist-digits":
+            or FLAGS.dataset == "emnist-digits" or FLAGS.dataset == "emnist-mnist":
         num_classes = 10
     elif FLAGS.dataset == "emnist-balanced":
         num_classes = 47
@@ -363,6 +363,9 @@ def main(_):
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
     elif FLAGS.dataset == "emnist-byclass":
+        print("Reading e-mnist")
+        mnist = read_data_sets_local('data/emnist', one_hot=True)
+    elif FLAGS.dataset == "emnist-mnist":
         print("Reading e-mnist")
         mnist = read_data_sets_local('data/emnist', one_hot=True)
     tf.reset_default_graph()
