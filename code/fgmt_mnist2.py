@@ -31,7 +31,7 @@ parser.add_argument('--batch_size', type=int, default=100,
                     help='Batch size')
 parser.add_argument('--train_epochs', type=int, default=5000,
                     help='Iterations')
-parser.add_argument('--epsilon', type=int, default=10,
+parser.add_argument('--epsilon', type=float, default=0.1,
                     help='Epsilon - Amount of noise to be added')
 parser.add_argument('--load', type=bool, default=True,
                     help='Load an old model instead of training a new one from scratch')
