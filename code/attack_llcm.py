@@ -246,7 +246,6 @@ def read_data_sets_local(train_dir,
         TEST_LABELS = 't10k-labels-idx1-ubyte.gz'
 
     elif FLAGS.dataset == "emnist-balanced":
-        print("Reading emnist-balanced")
         TRAIN_IMAGES = 'emnist-balanced-train-images-idx3-ubyte.gz'
         TRAIN_LABELS = 'emnist-balanced-train-labels-idx1-ubyte.gz'
         TEST_IMAGES = 'emnist-balanced-test-images-idx3-ubyte.gz'

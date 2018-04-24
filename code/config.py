@@ -66,9 +66,9 @@ __C.USE_CKPT = True
 __C.DATA_DIR = '/tmp/tensorflow/mnist/'
 
 # directory for saving check points
-__C.TRAIN_DIR = '/tmp/adv_attack_capsnet/output/output_test'
-# __C.TRAIN_DIR = '/Users/christorreslugo/PycharmProjects/adv_attack_capsnet/output/output_test'
+# __C.TRAIN_DIR = '/tmp/adv_attack_capsnet/output/output_test'
+__C.TRAIN_DIR = '/Users/christorreslugo/PycharmProjects/adv_attack_capsnet/output/output_test'
 
 # direcotry for saving tensorboard files
-__C.TB_DIR = '/tmp/adv_attack_capsnet/output/tensorboard_test'
-# __C.TB_DIR = '/Users/christorreslugo/PycharmProjects/adv_attack_capsnet/output/tensorboard_test'
+# __C.TB_DIR = '/tmp/adv_attack_capsnet/output/tensorboard_test'
+__C.TB_DIR = '/Users/christorreslugo/PycharmProjects/adv_attack_capsnet/output/tensorboard_test'

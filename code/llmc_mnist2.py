@@ -33,6 +33,8 @@ parser.add_argument('--train_epochs', type=int, default=5000,
                     help='Iterations')
 parser.add_argument('--epsilon', type=float, default=0.1,
                     help='Epsilon - Amount of noise to be added')
+parser.add_argument('--epochs', type=float, default=1,
+                    help='Epochs - Amount of epochs')
 parser.add_argument('--load', type=bool, default=True,
                     help='Load an old model instead of training a new one from scratch')
 FLAGS, unparsed = parser.parse_known_args()
@@ -370,11 +372,11 @@ train(sess, env, X_train, y_train, X_valid, y_valid, load=FLAGS.load, epochs=FLA
 
 print('\nEvaluating on clean data')
 
-evaluate(sess, env, X_test, y_test)
+# evaluate(sess, env, X_test, y_test)
 
 print('\nGenerating adversarial data')
 
-X_adv = make_fgm(sess, env, X_test, eps=FLAGS.epsilon, epochs=8)
+X_adv = make_fgm(sess, env, X_test, eps=FLAGS.epsilon, epochs=FLAGS.epochs)
 
 print('\nEvaluating on adversarial data')
 

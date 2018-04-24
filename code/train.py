@@ -397,7 +397,7 @@ def main(_):
         for iters in xrange(FLAGS.iterations):
             sys.stdout.write('>>> %d / %d \r' % (iters % cfg.PRINT_EVERY, cfg.PRINT_EVERY))
             sys.stdout.flush()
-            caps_net.train_with_summary(sess, batch_size=FLAGS.batch_size, iters=iters)
+            caps_net.train_with_summary(sess, batch_size=FLAGS.batch_size, iters=iters, max_iters=FLAGS.iterations)
             if iters % cfg.PRINT_EVERY == 0 and iters > 0:
                 toc = time.time()
                 print('average time: %.2f secs' % (toc - tic))

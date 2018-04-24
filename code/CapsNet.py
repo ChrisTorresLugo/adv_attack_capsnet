@@ -139,21 +139,21 @@ class CapsNet(object):
                                         initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
             # log_prior with shape: [10, num_caps]
         elif self._dataset_name == "emnist-letters":
-            cap_ws = tf.get_variable('cap_w', shape=[37, num_caps, 8, 16], dtype=tf.float32,)
+            cap_ws = tf.get_variable('cap_w', shape=[27, num_caps, 8, 16], dtype=tf.float32,)
             # initial value for "tf.scan", see official doc for details
-            fn_init = tf.zeros([37, num_caps, 1, 16])
+            fn_init = tf.zeros([27, num_caps, 1, 16])
             # x after tiled with shape: [10, num_caps, 1, 8]
             # cap_ws with shape: [10, num_caps, 8, 16],
             # [8 x 16] for each pair of capsules between two layers
             # u_hat_j|i = W_ij * u_i
-            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 37, 1, 1, 1]),
+            cap_predicts = tf.scan(lambda ac, x: tf.matmul(x, cap_ws), tf.tile(primary_caps, [1, 27, 1, 1, 1]),
                                    initializer=fn_init, name='cap_predicts')
             # cap_predicts with shape: [None, 10, num_caps, 1, 16]
             cap_predictions = tf.squeeze(cap_predicts, axis=[3])
             # after squeeze with shape: [None, 10, num_caps, 16]
 
             # log prior probabilities
-            log_prior = tf.get_variable('log_prior', shape=[37, num_caps], dtype=tf.float32,
+            log_prior = tf.get_variable('log_prior', shape=[27, num_caps], dtype=tf.float32,
                                         initializer=tf.zeros_initializer(), trainable=cfg.PRIOR_TRAINING)
             # log_prior with shape: [10, num_caps]
         elif self._dataset_name == "emnist-byclass":
@@ -228,7 +228,7 @@ class CapsNet(object):
         elif self._dataset_name == "emnist-letters":
             _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
                                                  shape_invariants=[iters.get_shape(),
-                                                                   tf.TensorShape([None, 37, num_caps]),
+                                                                   tf.TensorShape([None, 27, num_caps]),
                                                                    init_cap.get_shape()])
         elif self._dataset_name == "emnist-byclass":
             _, prior, digit_caps = tf.while_loop(condition, body, [iters, prior, init_cap],
@@ -394,7 +394,7 @@ class CapsNet(object):
             self._y_ = tf.placeholder(tf.float32, [None, 47], name="balanced-label")
         elif self._dataset_name == "emnist-letters":
             self._x = tf.placeholder(tf.float32, [None, 784], name="letters-image")
-            self._y_ = tf.placeholder(tf.float32, [None, 37], name="letters-label")
+            self._y_ = tf.placeholder(tf.float32, [None, 27], name="letters-label")
         elif self._dataset_name == "emnist-byclass":
             self._x = tf.placeholder(tf.float32, [None, 784], name="letters-image")
             self._y_ = tf.placeholder(tf.float32, [None, 62], name="letters-label")
@@ -521,7 +521,7 @@ class CapsNet(object):
             tf.summary.scalar('accuracy', self.accuracy)
 
 
-    def train_with_summary(self, sess, batch_size=100, iters=0):
+    def train_with_summary(self, sess, batch_size=100, iters=0, max_iters=5000):
         if self._dataset_name == "mnist" or self._dataset_name == "fashion-mnist"  \
                 or self._dataset_name == "emnist-digits" or self._dataset_name == "emnist-balanced" \
                 or self._dataset_name == "emnist-letters"  or self._dataset_name == "emnist-bymerge" \
@@ -543,7 +543,7 @@ class CapsNet(object):
                 self.train_writer.add_summary(train_summary, iters)
                 self.train_writer.flush()
 
-                print("iters: %d / %d, loss ==> %.4f " % (iters, cfg.MAX_ITERS, loss))
+                print("iters: %d / %d, loss ==> %.4f " % (iters, max_iters, loss))
                 print('train accuracy: %.4f' % train_acc)
 
                 test_acc, test_summary = sess.run([self.accuracy, self._summary_op],
