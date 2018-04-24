@@ -33,7 +33,7 @@ parser.add_argument('--train_epochs', type=int, default=5000,
                     help='Iterations')
 parser.add_argument('--epsilon', type=int, default=10,
                     help='Epsilon - Amount of noise to be added')
-parser.add_argument('--load', type=bool, default=False,
+parser.add_argument('--load', type=bool, default=True,
                     help='Load an old model instead of training a new one from scratch')
 FLAGS, unparsed = parser.parse_known_args()
 print(FLAGS.dataset)
@@ -283,6 +283,7 @@ def train(sess, env, X_data, y_data, X_valid=None, y_valid=None, epochs=1,
     Train a TF model by running env.train_op.
     """
     if load:
+        print("Inside load")
         if not hasattr(env, 'saver'):
             return print('\nError: cannot find saver op')
         print('\nLoading saved model')
