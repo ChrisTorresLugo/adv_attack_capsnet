@@ -86,10 +86,12 @@ def extract_labels(f, one_hot=False, num_classes=10):
     if FLAGS.dataset == "mnist" or FLAGS.dataset == "fashion-mnist" \
             or FLAGS.dataset == "emnist-digits" or FLAGS.dataset == "emnist-mnist":
         num_classes = 10
-    elif FLAGS.dataset == "emnist-balanced":
+    elif FLAGS.dataset == "emnist-balanced" or FLAGS.dataset == "emnist-bymerge":
         num_classes = 47
     elif FLAGS.dataset == "emnist-letters":
-        num_classes = 37
+        num_classes = 27
+    elif FLAGS.dataset == "emnist-byclass":
+        num_classes = 62
 
     with gzip.GzipFile(fileobj=f) as bytestream:
         magic = _read32(bytestream)
@@ -387,7 +389,7 @@ def main(_):
         target = tf.one_hot(tf.argmin(caps_net._digit_caps_norm,1), 47, on_value=1.,off_value=0.)
 
     elif FLAGS.dataset == "emnist-letters":
-        target = tf.one_hot(tf.argmin(caps_net._digit_caps_norm,1), 37, on_value=1.,off_value=0.)
+        target = tf.one_hot(tf.argmin(caps_net._digit_caps_norm,1), 27, on_value=1.,off_value=0.)
 
     elif FLAGS.dataset == "emnist-byclass":
         target = tf.one_hot(tf.argmin(caps_net._digit_caps_norm,1), 62, on_value=1.,off_value=0.)
